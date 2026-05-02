@@ -4,166 +4,108 @@ import re
 import pandas as pd
 from concurrent.futures import ThreadPoolExecutor
 
-# ================= PAGE CONFIG =================
+# ================= CONFIG =================
 st.set_page_config(
     page_title="LeadX Pro Scraper",
     page_icon="⚡",
     layout="wide"
 )
 
-# ================= CUSTOM STYLE (ECONIX STYLE) =================
-st.markdown("""
-<style>
+st.title("⚡ LeadX Pro Email Scraper (Excel Style Output)")
+st.write("Website → Email-1, Email-2, Email-3 ... format 🚀")
 
-body {
-    background: linear-gradient(135deg, #0f172a, #1e1b4b);
-    color: white;
-}
+# ================= INPUT =================
+urls_input = st.text_area("Enter Websites (one per line)")
 
-h1, h2, h3 {
-    color: #ffffff;
-}
+EMAIL_REGEX = r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}"
 
-.sidebar .sidebar-content {
-    background: #111827;
-}
+COMMON_PATHS = [
+    "/", "/contact", "/contact-us", "/about",
+    "/support", "/faq", "/privacy", "/terms"
+]
 
-.card {
-    background: rgba(255,255,255,0.05);
-    padding: 15px;
-    border-radius: 15px;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 4px 30px rgba(0,0,0,0.3);
-    margin-bottom: 10px;
-}
+# ================= CLEAN EMAILS =================
+def clean_emails(emails):
+    clean = []
+    for e in emails:
+        if re.match(EMAIL_REGEX, e):
+            if not any(x in e.lower() for x in ["png", "jpg", "webp", "gif"]):
+                clean.append(e)
 
-.stButton button {
-    background: linear-gradient(90deg, #6366f1, #a855f7);
-    color: white;
-    border-radius: 10px;
-    padding: 10px 20px;
-    font-weight: bold;
-    transition: 0.3s;
-}
+    # remove duplicates + max 5
+    return list(dict.fromkeys(clean))[:5]
 
-.stButton button:hover {
-    transform: scale(1.05);
-}
+# ================= SCRAPER =================
+def scrape_site(url):
+    try:
+        all_emails = set()
 
-</style>
-""", unsafe_allow_html=True)
+        for path in COMMON_PATHS:
+            full_url = url.rstrip("/") + path
 
-# ================= SIDEBAR PROFILE =================
-st.sidebar.image("https://kommodo.ai/i/jgrsiXtQ3CuYlMPJl2Gi", width=150)
+            r = requests.get(
+                full_url,
+                timeout=8,
+                headers={"User-Agent": "Mozilla/5.0"}
+            )
 
-st.sidebar.markdown("""
-### 💡 LeadX Pro Tool  
-*"Turn websites into real business leads"*
-""")
+            emails = re.findall(EMAIL_REGEX, r.text)
 
-menu = st.sidebar.selectbox(
-    "📌 Navigation",
-    ["🏠 Dashboard", "ℹ About", "📞 Contact", "📄 Terms", "🔐 Privacy", "❓ FAQ"]
-)
+            for e in clean_emails(emails):
+                all_emails.add(e)
 
-# ================= STATIC PAGES =================
-if menu == "ℹ About":
-    st.title("ℹ About Tool")
-    st.write("Advanced SaaS scraper for extracting official business emails.")
+            if len(all_emails) >= 5:
+                break
 
-elif menu == "📞 Contact":
-    st.title("📞 Contact")
-    st.write("support@leadxpro.com")
+        emails_list = list(all_emails)[:5]
 
-elif menu == "📄 Terms":
-    st.title("📄 Terms & Conditions")
-    st.write("Use only for legal lead generation purposes.")
+        return url, emails_list
 
-elif menu == "🔐 Privacy":
-    st.title("🔐 Privacy Policy")
-    st.write("We do not store or save any user data.")
+    except:
+        return url, []
 
-elif menu == "❓ FAQ":
-    st.title("❓ FAQ")
-    st.write("Max 5 official emails per website. Duplicate domains removed.")
+# ================= RUN =================
+if st.button("🚀 Start Scraping"):
 
-# ================= MAIN DASHBOARD =================
-else:
+    urls = list(set([u.strip() for u in urls_input.split("\n") if u.strip()]))
 
-    st.title("⚡ LeadX Pro Email Scraper")
-    st.write("Scrape 1000+ websites with smart crawling 🚀")
+    results = []
+    progress = st.progress(0)
 
-    urls_input = st.text_area("Enter URLs (one per line)")
+    with ThreadPoolExecutor(max_workers=15) as executor:
+        futures = [executor.submit(scrape_site, u if u.startswith("http") else "https://" + u)
+                   for u in urls]
 
-    EMAIL_REGEX = r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}"
+        for i, f in enumerate(futures):
+            url, emails = f.result()
 
-    COMMON_PATHS = [
-        "/", "/contact", "/contact-us", "/about",
-        "/support", "/faq", "/privacy", "/terms"
-    ]
+            # FIXED FORMAT (COLUMN STYLE)
+            row = {
+                "Website": url,
+                "Email-1": emails[0] if len(emails) > 0 else "",
+                "Email-2": emails[1] if len(emails) > 1 else "",
+                "Email-3": emails[2] if len(emails) > 2 else "",
+                "Email-4": emails[3] if len(emails) > 3 else "",
+                "Email-5": emails[4] if len(emails) > 4 else "",
+            }
 
-    def clean_emails(emails):
-        clean = []
-        for e in emails:
-            if re.match(EMAIL_REGEX, e):
-                if not any(x in e.lower() for x in ["png", "jpg", "webp", "gif"]):
-                    clean.append(e)
-        return list(dict.fromkeys(clean))[:5]
+            results.append(row)
 
-    def scrape_site(url):
-        try:
-            found = set()
+            progress.progress((i + 1) / len(urls))
 
-            for path in COMMON_PATHS:
-                full = url.rstrip("/") + path
+    df = pd.DataFrame(results)
 
-                r = requests.get(full, timeout=8, headers={"User-Agent": "Mozilla/5.0"})
+    st.success("Scraping Completed ✅")
 
-                emails = re.findall(EMAIL_REGEX, r.text)
+    # ================= TABLE =================
+    st.dataframe(df, use_container_width=True)
 
-                for e in clean_emails(emails):
-                    found.add(e)
+    # ================= DOWNLOAD =================
+    csv = df.to_csv(index=False).encode("utf-8")
 
-                if len(found) >= 5:
-                    break
-
-            return url, list(found)[:5]
-
-        except:
-            return url, []
-
-    # ================= RUN =================
-    if st.button("🚀 Start Ultra Scraping"):
-
-        urls = list(set([u.strip() for u in urls_input.split("\n") if u.strip()]))
-
-        results = []
-        progress = st.progress(0)
-
-        with ThreadPoolExecutor(max_workers=15) as executor:
-            futures = [executor.submit(scrape_site, u if u.startswith("http") else "https://" + u)
-                       for u in urls]
-
-            for i, f in enumerate(futures):
-                url, emails = f.result()
-
-                if emails:
-                    email_string = " | ".join([f"email {i+1}: {e}" for i, e in enumerate(emails)])
-                    results.append([url, email_string])
-                else:
-                    results.append([url, "No Email Found"])
-
-                progress.progress((i + 1) / len(urls))
-
-        df = pd.DataFrame(results, columns=["Website", "Emails"])
-
-        st.success("Scraping Completed 🚀")
-
-        st.dataframe(df, use_container_width=True)
-
-        st.download_button(
-            "⬇ Download CSV",
-            df.to_csv(index=False),
-            "leadx_pro.csv",
-            "text/csv"
-        )
+    st.download_button(
+        "⬇ Download Excel CSV",
+        csv,
+        "leadx_pro.xlsx.csv",
+        "text/csv"
+    )
