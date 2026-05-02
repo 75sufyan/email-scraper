@@ -2,125 +2,99 @@ import streamlit as st
 import requests
 import re
 import pandas as pd
+from concurrent.futures import ThreadPoolExecutor
 
 # ================= PAGE CONFIG =================
 st.set_page_config(
-    page_title="Email Scraper Pro",
+    page_title="Email Scraper Pro 10X",
     page_icon="⚡",
     layout="wide"
 )
 
-# ================= CUSTOM CSS (PRERENO STYLE) =================
-st.markdown("""
-<style>
+# ================= UI =================
+st.title("⚡ Email Scraper Pro 10X")
+st.write("Fast + Clean + Business Email Extractor 🚀")
 
-body {
-    background-color: #0f172a;
-}
+# ================= INPUT =================
+domains = st.text_area("Enter websites (one per line)")
 
-.main {
-    background-color: #0f172a;
-}
-
-h1, h2, h3 {
-    color: #ffffff;
-}
-
-.stTextArea textarea {
-    background-color: #1e293b;
-    color: white;
-    border-radius: 10px;
-}
-
-.stButton button {
-    background: linear-gradient(90deg, #6366f1, #8b5cf6);
-    color: white;
-    border-radius: 10px;
-    padding: 10px 20px;
-    font-weight: bold;
-    border: none;
-}
-
-.card {
-    background-color: #1e293b;
-    padding: 20px;
-    border-radius: 15px;
-    margin-top: 10px;
-    color: white;
-    box-shadow: 0px 4px 20px rgba(0,0,0,0.3);
-}
-
-</style>
-""", unsafe_allow_html=True)
-
-# ================= HEADER =================
-st.title("⚡ Email Scraper Pro Dashboard")
-st.write("Extract business emails from websites in seconds 🚀")
-
-# ================= INPUT SECTION =================
-col1, col2 = st.columns([2,1])
-
-with col1:
-    domains = st.text_area("Enter Websites (one per line)")
-
-with col2:
-    st.markdown("""
-    <div class="card">
-        <h3>💡 How it works</h3>
-        <p>1. Enter domains<br>
-        2. Click scrape<br>
-        3. Get emails instantly</p>
-    </div>
-    """, unsafe_allow_html=True)
-
+# ================= EMAIL PATTERN =================
 EMAIL_REGEX = r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}"
 
-def get_emails(url):
+# ================= FILTERS =================
+BUSINESS_PREFIX = ["info", "contact", "support", "sales", "hello"]
+
+def is_valid_email(email):
+    if not re.match(EMAIL_REGEX, email):
+        return False
+    if any(x in email.lower() for x in ["png", "jpg", "webp", "svg", "gif"]):
+        return False
+    return True
+
+def is_business(email):
+    return any(email.lower().startswith(p) for p in BUSINESS_PREFIX)
+
+# ================= SCRAPER =================
+def scrape_site(url):
     try:
-        r = requests.get(url, timeout=10)
-        return list(set(re.findall(EMAIL_REGEX, r.text)))
+        r = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
+        emails = re.findall(EMAIL_REGEX, r.text)
+
+        clean = set()
+
+        for e in emails:
+            if is_valid_email(e):
+                clean.add(e)
+
+        return url, list(clean)
+
     except:
-        return []
+        return url, []
 
-# ================= SCRAPE BUTTON =================
-if st.button("🚀 Start Scraping"):
+# ================= RUN =================
+if st.button("🚀 Start 10X Scraping"):
 
-    results = []
-    progress = st.progress(0)
+    domain_list = [d.strip() for d in domains.split("\n") if d.strip()]
 
-    domain_list = domains.split("\n")
+    if not domain_list:
+        st.warning("Please enter websites")
+    else:
 
-    for i, d in enumerate(domain_list):
-        d = d.strip()
-        if not d:
-            continue
+        results = []
+        progress = st.progress(0)
 
-        if not d.startswith("http"):
-            d = "https://" + d
+        # FAST PARALLEL SCRAPING
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            futures = [executor.submit(scrape_site, d if d.startswith("http") else "https://" + d)
+                       for d in domain_list]
 
-        emails = get_emails(d)
+            for i, f in enumerate(futures):
+                url, emails = f.result()
 
-        if emails:
-            for e in emails:
-                results.append([d, e])
-        else:
-            results.append([d, "Not Found"])
+                if emails:
+                    for e in emails:
+                        if is_business(e):
+                            results.append([url, e, "Business"])
+                        else:
+                            results.append([url, e, "General"])
+                else:
+                    results.append([url, "Not Found", "N/A"])
 
-        progress.progress((i+1)/len(domain_list))
+                progress.progress((i + 1) / len(domain_list))
 
-    df = pd.DataFrame(results, columns=["Website", "Email"])
+        # ================= DATAFRAME =================
+        df = pd.DataFrame(results, columns=["Website", "Email", "Type"])
 
-    st.success("Scraping Completed ✅")
+        st.success("Scraping Completed ✅")
 
-    # ================= RESULT TABLE =================
-    st.dataframe(df, use_container_width=True)
+        st.dataframe(df, use_container_width=True)
 
-    # ================= DOWNLOAD =================
-    csv = df.to_csv(index=False).encode('utf-8')
+        # ================= DOWNLOAD =================
+        csv = df.to_csv(index=False).encode("utf-8")
 
-    st.download_button(
-        "⬇ Download CSV Report",
-        csv,
-        "emails.csv",
-        "text/csv"
-    )
+        st.download_button(
+            "⬇ Download CSV",
+            csv,
+            "emails_10x.csv",
+            "text/csv"
+        )
