@@ -54,7 +54,7 @@ h1, h2, h3 {
 """, unsafe_allow_html=True)
 
 # ================= SIDEBAR PROFILE =================
-st.sidebar.image("https://i.imgur.com/8Km9tLL.png", width=150)
+st.sidebar.image("https://kommodo.ai/i/jgrsiXtQ3CuYlMPJl2Gi", width=150)
 
 st.sidebar.markdown("""
 ### 💡 LeadX Pro Tool  
