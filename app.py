@@ -4,234 +4,250 @@ import re
 import pandas as pd
 from concurrent.futures import ThreadPoolExecutor
 
-# ================= CONFIG =================
+# ================= PAGE CONFIG =================
 st.set_page_config(page_title="Econix Lead Engine", page_icon="⚡", layout="wide")
 
-# ================= CSS FIXED =================
+# ================= CSS =================
 st.markdown("""
 <style>
 
-/* BACKGROUND */
-body {
-    background: linear-gradient(-45deg, #0f172a, #1e1b4b, #312e81, #4c1d95);
+/* ===== GLOBAL ===== */
+html, body {
+    background: linear-gradient(-45deg,#0f172a,#1e1b4b,#312e81,#4c1d95);
     background-size: 400% 400%;
-    animation: gradientBG 12s ease infinite;
+    animation: bg 10s ease infinite;
     color: white;
 }
-@keyframes gradientBG {
-    0% {background-position: 0% 50%;}
-    50% {background-position: 100% 50%;}
-    100% {background-position: 0% 50%;}
+@keyframes bg {
+    0%{background-position:0%}
+    50%{background-position:100%}
+    100%{background-position:0%}
 }
 
-/* HERO */
+/* ===== NAVBAR ===== */
+.navbar {
+    display:flex;
+    justify-content:space-between;
+    padding:15px 25px;
+    background: rgba(255,255,255,0.05);
+    border-radius:12px;
+    margin-bottom:20px;
+}
+.logo {
+    font-size:20px;
+    font-weight:bold;
+}
+.menu span {
+    margin-left:20px;
+    cursor:pointer;
+    color:#ccc;
+}
+.menu span:hover {
+    color:white;
+}
+
+/* ===== HERO ===== */
 .hero {
-    padding: 40px;
-    border-radius: 20px;
-    background: linear-gradient(135deg, #6366f1, #a855f7);
-    text-align: center;
-    color: white;
-    margin-bottom: 25px;
+    padding:40px;
+    border-radius:20px;
+    background: linear-gradient(135deg,#6366f1,#a855f7);
+    text-align:center;
+    margin-bottom:20px;
 }
 
-/* CARDS */
+/* ===== CARDS ===== */
 .card {
     background: rgba(255,255,255,0.05);
-    padding: 20px;
-    border-radius: 15px;
-    backdrop-filter: blur(10px);
-    text-align: center;
-    transition: 0.3s;
+    padding:20px;
+    border-radius:15px;
+    text-align:center;
+    transition:0.3s;
 }
 .card:hover {
-    transform: translateY(-6px);
+    transform:translateY(-8px);
 }
 
-/* BUTTON */
+/* ===== BUTTON ===== */
 .stButton button {
-    background: linear-gradient(90deg, #6366f1, #a855f7);
-    color: white;
-    border-radius: 10px;
-    padding: 10px 20px;
-    font-weight: bold;
+    background: linear-gradient(90deg,#6366f1,#a855f7);
+    border:none;
+    color:white;
+    border-radius:10px;
+    font-weight:bold;
 }
 
-/* SIDEBAR */
+/* ===== SIDEBAR ===== */
 section[data-testid="stSidebar"] {
-    background: #0f172a;
+    background:#0f172a;
 }
 
-/* PROFILE */
+/* ===== PROFILE ===== */
 .profile-box {
-    text-align: center;
-    margin-top: 10px;
+    text-align:center;
 }
 
 /* GLOW RING */
 .profile-img {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    padding: 3px;
-    background: linear-gradient(45deg, #6366f1, #a855f7, #22d3ee);
-    margin: auto;
+    width:110px;
+    height:110px;
+    border-radius:50%;
+    padding:3px;
+    background: linear-gradient(45deg,#6366f1,#a855f7,#22d3ee);
+    margin:auto;
 }
 .profile-img img {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    object-fit: cover;
+    width:100%;
+    height:100%;
+    border-radius:50%;
+    object-fit:cover;
 }
 
 /* NAME */
 .profile-name {
-    margin-top: 10px;
-    font-size: 16px;
-    font-weight: bold;
+    margin-top:10px;
+    font-weight:bold;
 }
 
 /* ONLINE DOT */
 .online {
-    height: 8px;
-    width: 8px;
-    background: #22c55e;
-    border-radius: 50%;
-    display: inline-block;
+    height:8px;
+    width:8px;
+    background:#22c55e;
+    border-radius:50%;
+    display:inline-block;
 }
 
 /* SOCIAL */
 .social a {
-    margin: 0 6px;
-    text-decoration: none;
-    font-size: 16px;
-    color: #aaa;
+    margin:0 6px;
+    color:#aaa;
+    text-decoration:none;
 }
 .social a:hover {
-    color: white;
+    color:white;
+}
+
+/* LOADER */
+.loader {
+    width:40px;
+    height:40px;
+    border:4px solid #ccc;
+    border-top:4px solid #a855f7;
+    border-radius:50%;
+    animation:spin 1s linear infinite;
+    margin:auto;
+}
+@keyframes spin {
+    0%{transform:rotate(0)}
+    100%{transform:rotate(360deg)}
 }
 
 </style>
 """, unsafe_allow_html=True)
 
-# ================= SIDEBAR CLEAN =================
+# ================= SIDEBAR =================
 st.sidebar.markdown("""
 <div class="profile-box">
 
-    <div class="profile-img">
-        <img src="https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/profile.jpg">
-    </div>
+<div class="profile-img">
+<img src="https://raw.githubusercontent.com/75sufyan/email-scraper/main/profile.jpg">
+</div>
 
-    <div class="profile-name">
-        Sufyan SA <span class="online"></span>
-    </div>
+<div class="profile-name">
+Sufyan SA <span class="online"></span>
+</div>
 
-    <div style="font-size:12px; color:#aaa;">
-        Build tools. Build freedom.
-    </div>
+<div style="font-size:12px;color:#aaa;">
+Build tools. Build freedom.
+</div>
 
-    <div class="social">
-        <a href="https://linkedin.com" target="_blank">🔗</a>
-        <a href="https://fiverr.com" target="_blank">💼</a>
-        <a href="https://github.com" target="_blank">💻</a>
-    </div>
+<div class="social">
+<a href="https://linkedin.com">🔗</a>
+<a href="https://fiverr.com">💼</a>
+<a href="https://github.com">💻</a>
+</div>
 
 </div>
 """, unsafe_allow_html=True)
 
-# ================= NAVIGATION =================
-menu = st.sidebar.selectbox(
-    "Navigation",
-    ["Dashboard", "About", "Contact", "Terms", "Privacy", "FAQ"]
-)
+# ================= NAVBAR =================
+st.markdown("""
+<div class="navbar">
+<div class="logo">⚡ Econix Lead Engine</div>
+<div class="menu">
+<span>Dashboard</span>
+<span>Tools</span>
+<span>Docs</span>
+<span>Support</span>
+</div>
+</div>
+""", unsafe_allow_html=True)
 
-# ================= STATIC PAGES =================
-if menu == "About":
-    st.title("About")
-    st.write("Econix Lead Engine extracts official emails from websites.")
+# ================= HERO =================
+st.markdown("""
+<div class="hero">
+<h1>Extract High Quality Emails</h1>
+<p>Smart scraping • Clean data • Fast results</p>
+</div>
+""", unsafe_allow_html=True)
 
-elif menu == "Contact":
-    st.title("Contact")
-    st.write("support@econixdigital.com")
+# ================= CARDS =================
+c1,c2,c3 = st.columns(3)
+with c1:
+    st.markdown('<div class="card">⚡ Fast Scraping</div>', unsafe_allow_html=True)
+with c2:
+    st.markdown('<div class="card">🎯 Smart Emails</div>', unsafe_allow_html=True)
+with c3:
+    st.markdown('<div class="card">📊 Clean Output</div>', unsafe_allow_html=True)
 
-elif menu == "Terms":
-    st.title("Terms")
-    st.write("Use only for legal purposes.")
+# ================= INPUT =================
+urls_input = st.text_area("Enter Websites (one per line)")
 
-elif menu == "Privacy":
-    st.title("Privacy")
-    st.write("No data stored.")
+EMAIL_REGEX = r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}"
+PATHS = ["/","/contact","/about","/faq","/support","/privacy","/terms"]
 
-elif menu == "FAQ":
-    st.title("FAQ")
-    st.write("Max 5 emails per website.")
+def scrape(url):
+    try:
+        found=set()
+        for p in PATHS:
+            r=requests.get(url.rstrip("/")+p,timeout=8)
+            emails=re.findall(EMAIL_REGEX,r.text)
+            for e in emails:
+                if "png" not in e:
+                    found.add(e)
+            if len(found)>=5:
+                break
+        return url,list(found)[:5]
+    except:
+        return url,[]
 
-# ================= MAIN =================
-else:
+# ================= SCRAPE =================
+if st.button("🚀 Start Scraping"):
 
-    st.markdown("""
-    <div class="hero">
-        <h1>⚡ Econix Lead Engine</h1>
-        <p>Extract High Quality Business Emails Instantly</p>
-    </div>
-    """, unsafe_allow_html=True)
+    urls=list(set([u.strip() for u in urls_input.split("\n") if u.strip()]))
 
-    col1, col2, col3 = st.columns(3)
+    results=[]
 
-    with col1:
-        st.markdown('<div class="card">⚡ Fast Scraping</div>', unsafe_allow_html=True)
-    with col2:
-        st.markdown('<div class="card">🎯 Smart Emails</div>', unsafe_allow_html=True)
-    with col3:
-        st.markdown('<div class="card">📊 Clean Output</div>', unsafe_allow_html=True)
-
-    urls_input = st.text_area("Enter Websites (one per line)")
-
-    EMAIL_REGEX = r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}"
-
-    PATHS = ["/", "/contact", "/about", "/faq", "/support", "/privacy", "/terms"]
-
-    def scrape(url):
-        try:
-            found = set()
-            for p in PATHS:
-                r = requests.get(url.rstrip("/") + p, timeout=8)
-                emails = re.findall(EMAIL_REGEX, r.text)
-                for e in emails:
-                    if "png" not in e:
-                        found.add(e)
-                if len(found) >= 5:
-                    break
-            return url, list(found)[:5]
-        except:
-            return url, []
-
-    if st.button("🚀 Start Scraping"):
-
-        urls = list(set([u.strip() for u in urls_input.split("\n") if u.strip()]))
-
-        results = []
-
+    with st.spinner("Scraping in progress..."):
         with ThreadPoolExecutor(max_workers=10) as ex:
-            futures = [ex.submit(scrape, u if u.startswith("http") else "https://" + u) for u in urls]
+            futures=[ex.submit(scrape, u if u.startswith("http") else "https://"+u) for u in urls]
 
             for f in futures:
-                url, emails = f.result()
+                url,emails=f.result()
 
-                row = {
-                    "Website": url,
-                    "Email-1": emails[0] if len(emails) > 0 else "",
-                    "Email-2": emails[1] if len(emails) > 1 else "",
-                    "Email-3": emails[2] if len(emails) > 2 else "",
-                    "Email-4": emails[3] if len(emails) > 3 else "",
-                    "Email-5": emails[4] if len(emails) > 4 else "",
+                row={
+                    "Website":url,
+                    "Email-1":emails[0] if len(emails)>0 else "",
+                    "Email-2":emails[1] if len(emails)>1 else "",
+                    "Email-3":emails[2] if len(emails)>2 else "",
+                    "Email-4":emails[3] if len(emails)>3 else "",
+                    "Email-5":emails[4] if len(emails)>4 else "",
                 }
-
                 results.append(row)
 
-        df = pd.DataFrame(results)
+    df=pd.DataFrame(results)
 
-        st.success("Done ✅")
+    st.success("Done ✅")
+    st.dataframe(df,use_container_width=True)
 
-        st.dataframe(df, use_container_width=True)
-
-        st.download_button("Download CSV", df.to_csv(index=False), "emails.csv")
+    st.download_button("Download CSV",df.to_csv(index=False),"emails.csv")
