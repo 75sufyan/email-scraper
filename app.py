@@ -5,17 +5,17 @@ import pandas as pd
 from concurrent.futures import ThreadPoolExecutor
 
 # ================= PAGE CONFIG =================
-st.set_page_config(page_title="Econix Lead Engine", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="Econix Email Finder", page_icon="⚡", layout="wide")
 
 # ================= CSS =================
 st.markdown("""
 <style>
 
-/* ===== GLOBAL ===== */
+/* ===== BACKGROUND ===== */
 html, body {
-    background: linear-gradient(-45deg,#0f172a,#1e1b4b,#312e81,#4c1d95);
+    background: linear-gradient(-45deg,#4709e5,#6d28d9,#9333ea,#c084fc);
     background-size: 400% 400%;
-    animation: bg 10s ease infinite;
+    animation: bg 12s ease infinite;
     color: white;
 }
 @keyframes bg {
@@ -30,17 +30,17 @@ html, body {
     justify-content:space-between;
     padding:15px 25px;
     background: rgba(255,255,255,0.05);
-    border-radius:12px;
+    border-radius:14px;
     margin-bottom:20px;
 }
 .logo {
-    font-size:20px;
+    font-size:22px;
     font-weight:bold;
 }
 .menu span {
     margin-left:20px;
     cursor:pointer;
-    color:#ccc;
+    color:#ddd;
 }
 .menu span:hover {
     color:white;
@@ -48,32 +48,36 @@ html, body {
 
 /* ===== HERO ===== */
 .hero {
-    padding:40px;
+    padding:50px;
     border-radius:20px;
-    background: linear-gradient(135deg,#6366f1,#a855f7);
+    background: linear-gradient(135deg,#4709e5,#9333ea);
     text-align:center;
-    margin-bottom:20px;
+    margin-bottom:25px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.4);
 }
 
 /* ===== CARDS ===== */
 .card {
-    background: rgba(255,255,255,0.05);
-    padding:20px;
-    border-radius:15px;
+    background: rgba(255,255,255,0.07);
+    padding:25px;
+    border-radius:16px;
     text-align:center;
     transition:0.3s;
 }
 .card:hover {
-    transform:translateY(-8px);
+    transform:translateY(-10px) scale(1.02);
+    background: rgba(255,255,255,0.12);
 }
 
 /* ===== BUTTON ===== */
 .stButton button {
-    background: linear-gradient(90deg,#6366f1,#a855f7);
+    background: linear-gradient(90deg,#9333ea,#c084fc);
     border:none;
     color:white;
-    border-radius:10px;
+    border-radius:12px;
     font-weight:bold;
+    padding:10px 20px;
+    font-size:16px;
 }
 
 /* ===== SIDEBAR ===== */
@@ -92,8 +96,14 @@ section[data-testid="stSidebar"] {
     height:110px;
     border-radius:50%;
     padding:3px;
-    background: linear-gradient(45deg,#6366f1,#a855f7,#22d3ee);
+    background: linear-gradient(45deg,#9333ea,#c084fc,#22d3ee);
+    animation: glow 3s infinite linear;
     margin:auto;
+}
+@keyframes glow {
+    0%{filter:brightness(1)}
+    50%{filter:brightness(1.5)}
+    100%{filter:brightness(1)}
 }
 .profile-img img {
     width:100%;
@@ -122,24 +132,10 @@ section[data-testid="stSidebar"] {
     margin:0 6px;
     color:#aaa;
     text-decoration:none;
+    font-size:18px;
 }
 .social a:hover {
     color:white;
-}
-
-/* LOADER */
-.loader {
-    width:40px;
-    height:40px;
-    border:4px solid #ccc;
-    border-top:4px solid #a855f7;
-    border-radius:50%;
-    animation:spin 1s linear infinite;
-    margin:auto;
-}
-@keyframes spin {
-    0%{transform:rotate(0)}
-    100%{transform:rotate(360deg)}
 }
 
 </style>
@@ -162,9 +158,9 @@ Build tools. Build freedom.
 </div>
 
 <div class="social">
-<a href="https://linkedin.com">🔗</a>
-<a href="https://fiverr.com">💼</a>
-<a href="https://github.com">💻</a>
+<a href="https://linkedin.com" target="_blank">🔗</a>
+<a href="https://fiverr.com" target="_blank">💼</a>
+<a href="https://github.com" target="_blank">💻</a>
 </div>
 
 </div>
@@ -173,10 +169,9 @@ Build tools. Build freedom.
 # ================= NAVBAR =================
 st.markdown("""
 <div class="navbar">
-<div class="logo">⚡ Econix Lead Engine</div>
+<div class="logo">⚡ Econix Email Finder</div>
 <div class="menu">
 <span>Dashboard</span>
-<span>Tools</span>
 <span>Docs</span>
 <span>Support</span>
 </div>
@@ -186,8 +181,8 @@ st.markdown("""
 # ================= HERO =================
 st.markdown("""
 <div class="hero">
-<h1>Extract High Quality Emails</h1>
-<p>Smart scraping • Clean data • Fast results</p>
+<h1>Find Real Business Emails Instantly</h1>
+<p>Smart scraping • No garbage • Max 5 clean emails per site</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -196,9 +191,9 @@ c1,c2,c3 = st.columns(3)
 with c1:
     st.markdown('<div class="card">⚡ Fast Scraping</div>', unsafe_allow_html=True)
 with c2:
-    st.markdown('<div class="card">🎯 Smart Emails</div>', unsafe_allow_html=True)
+    st.markdown('<div class="card">🎯 Smart Filter</div>', unsafe_allow_html=True)
 with c3:
-    st.markdown('<div class="card">📊 Clean Output</div>', unsafe_allow_html=True)
+    st.markdown('<div class="card">📊 Clean CSV Output</div>', unsafe_allow_html=True)
 
 # ================= INPUT =================
 urls_input = st.text_area("Enter Websites (one per line)")
@@ -206,18 +201,31 @@ urls_input = st.text_area("Enter Websites (one per line)")
 EMAIL_REGEX = r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}"
 PATHS = ["/","/contact","/about","/faq","/support","/privacy","/terms"]
 
+# ❌ junk filter
+def is_valid(email):
+    bad = ["png","jpg","jpeg","webp","svg","css","js","example","domain"]
+    return not any(b in email.lower() for b in bad)
+
 def scrape(url):
     try:
         found=set()
+
         for p in PATHS:
-            r=requests.get(url.rstrip("/")+p,timeout=8)
-            emails=re.findall(EMAIL_REGEX,r.text)
-            for e in emails:
-                if "png" not in e:
-                    found.add(e)
-            if len(found)>=5:
-                break
+            try:
+                r=requests.get(url.rstrip("/")+p,timeout=8)
+                emails=re.findall(EMAIL_REGEX,r.text)
+
+                for e in emails:
+                    if is_valid(e):
+                        found.add(e)
+
+                if len(found)>=5:
+                    break
+            except:
+                continue
+
         return url,list(found)[:5]
+
     except:
         return url,[]
 
@@ -228,9 +236,13 @@ if st.button("🚀 Start Scraping"):
 
     results=[]
 
-    with st.spinner("Scraping in progress..."):
-        with ThreadPoolExecutor(max_workers=10) as ex:
-            futures=[ex.submit(scrape, u if u.startswith("http") else "https://"+u) for u in urls]
+    with st.spinner("Scraping like a PRO..."):
+        with ThreadPoolExecutor(max_workers=15) as ex:
+
+            futures=[
+                ex.submit(scrape, u if u.startswith("http") else "https://"+u)
+                for u in urls
+            ]
 
             for f in futures:
                 url,emails=f.result()
@@ -247,7 +259,7 @@ if st.button("🚀 Start Scraping"):
 
     df=pd.DataFrame(results)
 
-    st.success("Done ✅")
+    st.success(f"✅ {len(df)} Websites Processed")
     st.dataframe(df,use_container_width=True)
 
-    st.download_button("Download CSV",df.to_csv(index=False),"emails.csv")
+    st.download_button("📥 Download CSV",df.to_csv(index=False),"emails.csv")
