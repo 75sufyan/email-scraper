@@ -5,20 +5,19 @@ import pandas as pd
 from concurrent.futures import ThreadPoolExecutor
 
 # ================= CONFIG =================
-st.set_page_config(page_title="LeadX Pro", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="Econix Lead Engine", page_icon="⚡", layout="wide")
 
-# ================= ADVANCED UI =================
+# ================= CSS FIXED =================
 st.markdown("""
 <style>
 
-/* ANIMATED BACKGROUND */
+/* BACKGROUND */
 body {
     background: linear-gradient(-45deg, #0f172a, #1e1b4b, #312e81, #4c1d95);
     background-size: 400% 400%;
     animation: gradientBG 12s ease infinite;
     color: white;
 }
-
 @keyframes gradientBG {
     0% {background-position: 0% 50%;}
     50% {background-position: 100% 50%;}
@@ -27,12 +26,12 @@ body {
 
 /* HERO */
 .hero {
-    padding: 50px;
+    padding: 40px;
     border-radius: 20px;
     background: linear-gradient(135deg, #6366f1, #a855f7);
     text-align: center;
     color: white;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
 }
 
 /* CARDS */
@@ -45,15 +44,15 @@ body {
     transition: 0.3s;
 }
 .card:hover {
-    transform: translateY(-10px);
+    transform: translateY(-6px);
 }
 
 /* BUTTON */
 .stButton button {
     background: linear-gradient(90deg, #6366f1, #a855f7);
     color: white;
-    border-radius: 12px;
-    padding: 12px 25px;
+    border-radius: 10px;
+    padding: 10px 20px;
     font-weight: bold;
 }
 
@@ -63,78 +62,71 @@ section[data-testid="stSidebar"] {
 }
 
 /* PROFILE */
-.profile-container {
+.profile-box {
     text-align: center;
-    margin-top: 20px;
+    margin-top: 10px;
 }
 
 /* GLOW RING */
 .profile-img {
-    width: 140px;
-    height: 140px;
+    width: 120px;
+    height: 120px;
     border-radius: 50%;
-    object-fit: cover;
-    padding: 4px;
+    padding: 3px;
     background: linear-gradient(45deg, #6366f1, #a855f7, #22d3ee);
-    animation: rotate 6s linear infinite;
+    margin: auto;
 }
-
-@keyframes rotate {
-    100% { transform: rotate(360deg); }
-}
-
-/* INNER IMAGE */
 .profile-img img {
     width: 100%;
     height: 100%;
     border-radius: 50%;
+    object-fit: cover;
 }
 
 /* NAME */
 .profile-name {
-    font-size: 18px;
-    font-weight: bold;
     margin-top: 10px;
+    font-size: 16px;
+    font-weight: bold;
 }
 
 /* ONLINE DOT */
-.online-dot {
-    width: 10px;
-    height: 10px;
+.online {
+    height: 8px;
+    width: 8px;
     background: #22c55e;
     border-radius: 50%;
     display: inline-block;
-    margin-left: 5px;
 }
 
-/* SOCIAL ICONS */
+/* SOCIAL */
 .social a {
-    margin: 0 8px;
+    margin: 0 6px;
     text-decoration: none;
-    font-size: 18px;
-    color: #cbd5f5;
+    font-size: 16px;
+    color: #aaa;
 }
 .social a:hover {
-    color: #ffffff;
+    color: white;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
-# ================= SIDEBAR =================
+# ================= SIDEBAR CLEAN =================
 st.sidebar.markdown("""
-<div class="profile-container">
+<div class="profile-box">
 
     <div class="profile-img">
-        <img src="profile.jpg">
+        <img src="https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/profile.jpg">
     </div>
 
     <div class="profile-name">
-        Sufyan SA <span class="online-dot"></span>
+        Sufyan SA <span class="online"></span>
     </div>
 
     <div style="font-size:12px; color:#aaa;">
-        "Build tools. Build freedom."
+        Build tools. Build freedom.
     </div>
 
     <div class="social">
@@ -146,39 +138,40 @@ st.sidebar.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# ================= NAVIGATION =================
 menu = st.sidebar.selectbox(
-    "📌 Navigation",
-    ["🏠 Dashboard", "ℹ About", "📞 Contact", "📄 Terms", "🔐 Privacy", "❓ FAQ"]
+    "Navigation",
+    ["Dashboard", "About", "Contact", "Terms", "Privacy", "FAQ"]
 )
 
 # ================= STATIC PAGES =================
-if menu == "ℹ About":
+if menu == "About":
     st.title("About")
-    st.write("Professional SaaS Email Scraper Tool")
+    st.write("Econix Lead Engine extracts official emails from websites.")
 
-elif menu == "📞 Contact":
+elif menu == "Contact":
     st.title("Contact")
-    st.write("support@leadxpro.com")
+    st.write("support@econixdigital.com")
 
-elif menu == "📄 Terms":
+elif menu == "Terms":
     st.title("Terms")
-    st.write("Use for legal purposes only")
+    st.write("Use only for legal purposes.")
 
-elif menu == "🔐 Privacy":
+elif menu == "Privacy":
     st.title("Privacy")
-    st.write("No data stored")
+    st.write("No data stored.")
 
-elif menu == "❓ FAQ":
+elif menu == "FAQ":
     st.title("FAQ")
-    st.write("Max 5 emails per website")
+    st.write("Max 5 emails per website.")
 
 # ================= MAIN =================
 else:
 
     st.markdown("""
     <div class="hero">
-        <h1>⚡ LeadX Pro</h1>
-        <p>Extract High Quality Emails Instantly</p>
+        <h1>⚡ Econix Lead Engine</h1>
+        <p>Extract High Quality Business Emails Instantly</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -189,26 +182,23 @@ else:
     with col2:
         st.markdown('<div class="card">🎯 Smart Emails</div>', unsafe_allow_html=True)
     with col3:
-        st.markdown('<div class="card">📊 Clean Data</div>', unsafe_allow_html=True)
+        st.markdown('<div class="card">📊 Clean Output</div>', unsafe_allow_html=True)
 
-    urls_input = st.text_area("Enter Websites")
+    urls_input = st.text_area("Enter Websites (one per line)")
 
     EMAIL_REGEX = r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}"
 
-    COMMON_PATHS = [
-        "/", "/contact", "/contact-us", "/about",
-        "/support", "/faq", "/privacy", "/terms"
-    ]
+    PATHS = ["/", "/contact", "/about", "/faq", "/support", "/privacy", "/terms"]
 
-    def scrape_site(url):
+    def scrape(url):
         try:
             found = set()
-            for path in COMMON_PATHS:
-                full = url.rstrip("/") + path
-                r = requests.get(full, timeout=8)
+            for p in PATHS:
+                r = requests.get(url.rstrip("/") + p, timeout=8)
                 emails = re.findall(EMAIL_REGEX, r.text)
                 for e in emails:
-                    found.add(e)
+                    if "png" not in e:
+                        found.add(e)
                 if len(found) >= 5:
                     break
             return url, list(found)[:5]
@@ -217,13 +207,12 @@ else:
 
     if st.button("🚀 Start Scraping"):
 
-        urls = list(set(urls_input.split("\n")))
+        urls = list(set([u.strip() for u in urls_input.split("\n") if u.strip()]))
 
         results = []
 
-        with ThreadPoolExecutor(max_workers=10) as executor:
-            futures = [executor.submit(scrape_site, u if u.startswith("http") else "https://" + u)
-                       for u in urls]
+        with ThreadPoolExecutor(max_workers=10) as ex:
+            futures = [ex.submit(scrape, u if u.startswith("http") else "https://" + u) for u in urls]
 
             for f in futures:
                 url, emails = f.result()
@@ -241,6 +230,8 @@ else:
 
         df = pd.DataFrame(results)
 
-        st.dataframe(df)
+        st.success("Done ✅")
+
+        st.dataframe(df, use_container_width=True)
 
         st.download_button("Download CSV", df.to_csv(index=False), "emails.csv")
