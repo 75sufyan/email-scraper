@@ -5,21 +5,17 @@ import pandas as pd
 from concurrent.futures import ThreadPoolExecutor
 
 # ================= CONFIG =================
-st.set_page_config(
-    page_title="LeadX Pro",
-    page_icon="⚡",
-    layout="wide"
-)
+st.set_page_config(page_title="LeadX Pro", page_icon="⚡", layout="wide")
 
 # ================= ADVANCED UI =================
 st.markdown("""
 <style>
 
-/* ANIMATED GRADIENT BACKGROUND */
+/* ANIMATED BACKGROUND */
 body {
     background: linear-gradient(-45deg, #0f172a, #1e1b4b, #312e81, #4c1d95);
     background-size: 400% 400%;
-    animation: gradientBG 15s ease infinite;
+    animation: gradientBG 12s ease infinite;
     color: white;
 }
 
@@ -37,22 +33,19 @@ body {
     text-align: center;
     color: white;
     margin-bottom: 20px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.4);
 }
 
 /* CARDS */
 .card {
     background: rgba(255,255,255,0.05);
-    padding: 25px;
+    padding: 20px;
     border-radius: 15px;
-    backdrop-filter: blur(12px);
-    transition: 0.3s;
+    backdrop-filter: blur(10px);
     text-align: center;
+    transition: 0.3s;
 }
-
 .card:hover {
     transform: translateY(-10px);
-    box-shadow: 0 15px 50px rgba(0,0,0,0.6);
 }
 
 /* BUTTON */
@@ -62,11 +55,6 @@ body {
     border-radius: 12px;
     padding: 12px 25px;
     font-weight: bold;
-    border: none;
-}
-
-.stButton button:hover {
-    transform: scale(1.05);
 }
 
 /* SIDEBAR */
@@ -74,18 +62,89 @@ section[data-testid="stSidebar"] {
     background: #0f172a;
 }
 
+/* PROFILE */
+.profile-container {
+    text-align: center;
+    margin-top: 20px;
+}
+
+/* GLOW RING */
+.profile-img {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    object-fit: cover;
+    padding: 4px;
+    background: linear-gradient(45deg, #6366f1, #a855f7, #22d3ee);
+    animation: rotate 6s linear infinite;
+}
+
+@keyframes rotate {
+    100% { transform: rotate(360deg); }
+}
+
+/* INNER IMAGE */
+.profile-img img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+}
+
+/* NAME */
+.profile-name {
+    font-size: 18px;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+/* ONLINE DOT */
+.online-dot {
+    width: 10px;
+    height: 10px;
+    background: #22c55e;
+    border-radius: 50%;
+    display: inline-block;
+    margin-left: 5px;
+}
+
+/* SOCIAL ICONS */
+.social a {
+    margin: 0 8px;
+    text-decoration: none;
+    font-size: 18px;
+    color: #cbd5f5;
+}
+.social a:hover {
+    color: #ffffff;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
 # ================= SIDEBAR =================
-st.sidebar.image("https://i.imgur.com/8Km9tLL.png", width=150)
-
 st.sidebar.markdown("""
-### 🚀 LeadX Pro  
-*"Build once. Scale forever."*
+<div class="profile-container">
 
-💡 *Turn websites into real business leads*
-""")
+    <div class="profile-img">
+        <img src="profile.jpg">
+    </div>
+
+    <div class="profile-name">
+        Sufyan SA <span class="online-dot"></span>
+    </div>
+
+    <div style="font-size:12px; color:#aaa;">
+        "Build tools. Build freedom."
+    </div>
+
+    <div class="social">
+        <a href="https://linkedin.com" target="_blank">🔗</a>
+        <a href="https://fiverr.com" target="_blank">💼</a>
+        <a href="https://github.com" target="_blank">💻</a>
+    </div>
+
+</div>
+""", unsafe_allow_html=True)
 
 menu = st.sidebar.selectbox(
     "📌 Navigation",
@@ -94,72 +153,45 @@ menu = st.sidebar.selectbox(
 
 # ================= STATIC PAGES =================
 if menu == "ℹ About":
-    st.title("About LeadX Pro")
-    st.write("LeadX Pro is an advanced SaaS tool for extracting official business emails from websites.")
+    st.title("About")
+    st.write("Professional SaaS Email Scraper Tool")
 
 elif menu == "📞 Contact":
     st.title("Contact")
     st.write("support@leadxpro.com")
 
 elif menu == "📄 Terms":
-    st.title("Terms & Conditions")
-    st.write("Use only for legal business purposes.")
+    st.title("Terms")
+    st.write("Use for legal purposes only")
 
 elif menu == "🔐 Privacy":
-    st.title("Privacy Policy")
-    st.write("We do not store any user data.")
+    st.title("Privacy")
+    st.write("No data stored")
 
 elif menu == "❓ FAQ":
     st.title("FAQ")
-    st.markdown("""
-- Max 5 emails per website  
-- No duplicate websites  
-- Works on public data only  
-""")
+    st.write("Max 5 emails per website")
 
-# ================= MAIN DASHBOARD =================
+# ================= MAIN =================
 else:
 
-    # HERO
     st.markdown("""
     <div class="hero">
         <h1>⚡ LeadX Pro</h1>
-        <h3>Extract High-Quality Business Emails in Seconds</h3>
-        <p>Fast • Clean • Professional Lead Generation Tool</p>
+        <p>Extract High Quality Emails Instantly</p>
     </div>
     """, unsafe_allow_html=True)
 
-    # FEATURES
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.markdown("""
-        <div class="card">
-        <h3>⚡ Fast Engine</h3>
-        <p>Multi-threaded scraping for lightning speed</p>
-        </div>
-        """, unsafe_allow_html=True)
-
+        st.markdown('<div class="card">⚡ Fast Scraping</div>', unsafe_allow_html=True)
     with col2:
-        st.markdown("""
-        <div class="card">
-        <h3>🎯 Smart Emails</h3>
-        <p>Extract only relevant business emails</p>
-        </div>
-        """, unsafe_allow_html=True)
-
+        st.markdown('<div class="card">🎯 Smart Emails</div>', unsafe_allow_html=True)
     with col3:
-        st.markdown("""
-        <div class="card">
-        <h3>📊 Clean Output</h3>
-        <p>CRM-ready structured data</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown('<div class="card">📊 Clean Data</div>', unsafe_allow_html=True)
 
-    st.write("---")
-
-    # INPUT
-    urls_input = st.text_area("Enter Websites (one per line)")
+    urls_input = st.text_area("Enter Websites")
 
     EMAIL_REGEX = r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}"
 
@@ -168,75 +200,47 @@ else:
         "/support", "/faq", "/privacy", "/terms"
     ]
 
-    def clean_emails(emails):
-        clean = []
-        for e in emails:
-            if re.match(EMAIL_REGEX, e):
-                if not any(x in e.lower() for x in ["png", "jpg", "webp", "gif"]):
-                    clean.append(e)
-        return list(dict.fromkeys(clean))[:5]
-
     def scrape_site(url):
         try:
             found = set()
-
             for path in COMMON_PATHS:
                 full = url.rstrip("/") + path
-
-                r = requests.get(full, timeout=8, headers={"User-Agent": "Mozilla/5.0"})
-
+                r = requests.get(full, timeout=8)
                 emails = re.findall(EMAIL_REGEX, r.text)
-
-                for e in clean_emails(emails):
+                for e in emails:
                     found.add(e)
-
                 if len(found) >= 5:
                     break
-
             return url, list(found)[:5]
-
         except:
             return url, []
 
-    # RUN
     if st.button("🚀 Start Scraping"):
 
-        urls = list(set([u.strip() for u in urls_input.split("\n") if u.strip()]))
+        urls = list(set(urls_input.split("\n")))
 
         results = []
-        progress = st.progress(0)
 
-        with st.spinner("Scraping in progress... ⏳"):
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            futures = [executor.submit(scrape_site, u if u.startswith("http") else "https://" + u)
+                       for u in urls]
 
-            with ThreadPoolExecutor(max_workers=15) as executor:
-                futures = [executor.submit(scrape_site, u if u.startswith("http") else "https://" + u)
-                           for u in urls]
+            for f in futures:
+                url, emails = f.result()
 
-                for i, f in enumerate(futures):
-                    url, emails = f.result()
+                row = {
+                    "Website": url,
+                    "Email-1": emails[0] if len(emails) > 0 else "",
+                    "Email-2": emails[1] if len(emails) > 1 else "",
+                    "Email-3": emails[2] if len(emails) > 2 else "",
+                    "Email-4": emails[3] if len(emails) > 3 else "",
+                    "Email-5": emails[4] if len(emails) > 4 else "",
+                }
 
-                    row = {
-                        "Website": url,
-                        "Email-1": emails[0] if len(emails) > 0 else "",
-                        "Email-2": emails[1] if len(emails) > 1 else "",
-                        "Email-3": emails[2] if len(emails) > 2 else "",
-                        "Email-4": emails[3] if len(emails) > 3 else "",
-                        "Email-5": emails[4] if len(emails) > 4 else "",
-                    }
-
-                    results.append(row)
-
-                    progress.progress((i + 1) / len(urls))
+                results.append(row)
 
         df = pd.DataFrame(results)
 
-        st.success("✅ Scraping Completed Successfully!")
+        st.dataframe(df)
 
-        st.dataframe(df, use_container_width=True)
-
-        st.download_button(
-            "⬇ Download CSV",
-            df.to_csv(index=False),
-            "leadx_pro.csv",
-            "text/csv"
-        )
+        st.download_button("Download CSV", df.to_csv(index=False), "emails.csv")
