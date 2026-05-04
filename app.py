@@ -2,18 +2,18 @@ import streamlit as st
 import requests
 import re
 import pandas as pd
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from urllib.parse import urlparse
 
 # ================= PAGE CONFIG =================
 st.set_page_config(page_title="Econix Email Finder", page_icon="⚡", layout="wide")
 
-# ================= SESSION FIX (IMPORTANT) =================
+# ================= SESSION =================
 if "df" not in st.session_state:
     st.session_state.df = None
 
-# ================= CSS (UNCHANGED) =================
-st.markdown("""
-<style>
+# ================= UI (UNCHANGED) =================
+st.markdown("""<style>
 html, body {
     background: linear-gradient(-45deg,#4709e5,#6d28d9,#9333ea,#c084fc);
     background-size: 400% 400%;
@@ -25,159 +25,40 @@ html, body {
     50%{background-position:100%}
     100%{background-position:0%}
 }
-
-.navbar {
-    display:flex;
-    justify-content:space-between;
-    padding:15px 25px;
-    background: rgba(255,255,255,0.05);
-    border-radius:14px;
-    margin-bottom:20px;
-}
+.navbar {display:flex;justify-content:space-between;padding:15px 25px;background: rgba(255,255,255,0.05);border-radius:14px;margin-bottom:20px;}
 .logo { font-size:22px; font-weight:bold; }
 .menu span { margin-left:20px; cursor:pointer; color:#ddd; }
 .menu span:hover { color:white; }
-
-.hero {
-    padding:50px;
-    border-radius:20px;
-    background: linear-gradient(135deg,#4709e5,#9333ea);
-    text-align:center;
-    margin-bottom:25px;
-    box-shadow:0 10px 30px rgba(0,0,0,0.4);
-}
-
-.card {
-    background: rgba(255,255,255,0.07);
-    padding:25px;
-    border-radius:16px;
-    text-align:center;
-    transition:0.3s;
-}
-.card:hover {
-    transform:translateY(-10px) scale(1.02);
-    background: rgba(255,255,255,0.12);
-}
-
-.stButton button {
-    background: linear-gradient(90deg,#9333ea,#c084fc);
-    border:none;
-    color:white;
-    border-radius:12px;
-    font-weight:bold;
-    padding:10px 20px;
-    font-size:16px;
-}
-
+.hero {padding:50px;border-radius:20px;background: linear-gradient(135deg,#4709e5,#9333ea);text-align:center;margin-bottom:25px;box-shadow:0 10px 30px rgba(0,0,0,0.4);}
+.card {background: rgba(255,255,255,0.07);padding:25px;border-radius:16px;text-align:center;transition:0.3s;}
+.card:hover {transform:translateY(-10px) scale(1.02);background: rgba(255,255,255,0.12);}
+.stButton button {background: linear-gradient(90deg,#9333ea,#c084fc);border:none;color:white;border-radius:12px;font-weight:bold;padding:10px 20px;font-size:16px;}
 section[data-testid="stSidebar"] { background:#0f172a; }
-
-.profile-box { text-align:center; }
-
-.profile-img {
-    width:110px; height:110px;
-    border-radius:50%;
-    padding:3px;
-    background: linear-gradient(45deg,#9333ea,#c084fc,#22d3ee);
-    animation: glow 3s infinite linear;
-    margin:auto;
-}
-@keyframes glow {
-    0%{filter:brightness(1)}
-    50%{filter:brightness(1.5)}
-    100%{filter:brightness(1)}
-}
-.profile-img img {
-    width:100%; height:100%;
-    border-radius:50%;
-    object-fit:cover;
-}
-.profile-name { margin-top:10px; font-weight:bold; }
-
-.online {
-    height:8px; width:8px;
-    background:#22c55e;
-    border-radius:50%;
-    display:inline-block;
-}
-
-.social a {
-    margin:0 6px;
-    color:#aaa;
-    text-decoration:none;
-    font-size:18px;
-}
-.social a:hover { color:white; }
-</style>
-""", unsafe_allow_html=True)
-
-# ================= SIDEBAR =================
-st.sidebar.markdown("""
-<div class="profile-box">
-<div class="profile-img">
-<img src="https://raw.githubusercontent.com/75sufyan/email-scraper/main/profile.jpg">
-</div>
-<div class="profile-name">
-Sufyan SA <span class="online"></span>
-</div>
-<div style="font-size:12px;color:#aaa;">
-Build tools. Build freedom.
-</div>
-<div class="social">
-<a href="#">🔗</a>
-<a href="#">💼</a>
-<a href="#">💻</a>
-</div>
-</div>
-""", unsafe_allow_html=True)
-
-# ================= NAVBAR =================
-st.markdown("""
-<div class="navbar">
-<div class="logo">⚡ Econix Email Finder</div>
-<div class="menu">
-<span>Dashboard</span>
-<span>Docs</span>
-<span>Support</span>
-</div>
-</div>
-""", unsafe_allow_html=True)
-
-# ================= HERO =================
-st.markdown("""
-<div class="hero">
-<h1>Find Real Business Emails Instantly</h1>
-<p>Smart scraping • No garbage • Max 5 clean emails per site</p>
-</div>
-""", unsafe_allow_html=True)
-
-# ================= CARDS =================
-c1,c2,c3 = st.columns(3)
-with c1:
-    st.markdown('<div class="card">⚡ Fast Scraping</div>', unsafe_allow_html=True)
-with c2:
-    st.markdown('<div class="card">🎯 Smart Filter</div>', unsafe_allow_html=True)
-with c3:
-    st.markdown('<div class="card">📊 Clean CSV Output</div>', unsafe_allow_html=True)
+</style>""", unsafe_allow_html=True)
 
 # ================= INPUT =================
 urls_input = st.text_area("Enter Websites (one per line)")
 
-EMAIL_REGEX = r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}"
+EMAIL_REGEX = r"\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}\b"
 
-# 🔥 ADVANCED FILTER
-def is_valid(email):
+# 🔥 FILTERS
+BAD_KEYWORDS = [
+    "example","test","sample","domain","your","you",
+    "png","jpg","jpeg","svg","webp","css","js",
+    "wixpress","sentry","placeholder","email.com","company.com"
+]
+
+def get_domain(url):
+    return urlparse(url).netloc.replace("www.", "")
+
+def is_valid(email, domain):
     email = email.lower().strip()
 
-    bad_words = [
-        "example","test","sample","domain","your@","you@",
-        "png","jpg","jpeg","svg","webp","css","js",
-        "sentry","wixpress","readymag"
-    ]
-
-    if any(b in email for b in bad_words):
+    if any(b in email for b in BAD_KEYWORDS):
         return False
 
-    if "@" not in email or len(email) < 6:
+    # domain match (VERY IMPORTANT FIX)
+    if domain not in email:
         return False
 
     return True
@@ -185,69 +66,82 @@ def is_valid(email):
 def clean_email(e):
     return e.replace("u003e","").replace("%20","").strip().lower()
 
-PATHS = ["/","/contact","/about","/faq","/support","/privacy","/terms"]
+PATHS = ["/","/contact","/about","/support","/privacy","/terms"]
 
 def scrape(url):
-    try:
-        found=set()
+    domain = get_domain(url)
+    found = set()
 
-        for p in PATHS:
-            try:
-                r=requests.get(url.rstrip("/")+p,timeout=8)
+    for p in PATHS:
+        try:
+            r = requests.get(url.rstrip("/") + p, timeout=8, headers={"User-Agent":"Mozilla/5.0"})
+            emails = re.findall(EMAIL_REGEX, r.text)
 
-                emails=re.findall(EMAIL_REGEX,r.text)
+            for e in emails:
+                e = clean_email(e)
 
-                for e in emails:
-                    e = clean_email(e)
+                if is_valid(e, domain):
+                    found.add(e)
 
-                    if is_valid(e):
-                        found.add(e)
+            if len(found) >= 5:
+                break
 
-                if len(found)>=5:
-                    break
+        except:
+            continue
 
-            except:
-                continue
-
-        return url,list(found)[:5]
-
-    except:
-        return url,[]
+    return list(found)[:5]
 
 # ================= SCRAPE =================
 if st.button("🚀 Start Scraping"):
 
-    urls=list(set([u.strip() for u in urls_input.split("\n") if u.strip()]))
+    # ⚠️ ORDER FIX (IMPORTANT)
+    urls = [u.strip() for u in urls_input.split("\n") if u.strip()]
 
-    results=[]
+    formatted_urls = [
+        u if u.startswith("http") else "https://" + u
+        for u in urls
+    ]
+
+    results_dict = {}
 
     with st.spinner("Scraping like a PRO..."):
-        with ThreadPoolExecutor(max_workers=15) as ex:
+        with ThreadPoolExecutor(max_workers=10) as executor:
 
-            futures=[
-                ex.submit(scrape, u if u.startswith("http") else "https://"+u)
-                for u in urls
-            ]
+            future_to_url = {
+                executor.submit(scrape, url): url
+                for url in formatted_urls
+            }
 
-            for f in futures:
-                url,emails=f.result()
+            for future in as_completed(future_to_url):
+                url = future_to_url[future]
+                try:
+                    emails = future.result()
+                except:
+                    emails = []
 
-                row={
-                    "Website":url,
-                    "Email-1":emails[0] if len(emails)>0 else "",
-                    "Email-2":emails[1] if len(emails)>1 else "",
-                    "Email-3":emails[2] if len(emails)>2 else "",
-                    "Email-4":emails[3] if len(emails)>3 else "",
-                    "Email-5":emails[4] if len(emails)>4 else "",
-                }
-                results.append(row)
+                results_dict[url] = emails
 
-    df=pd.DataFrame(results)
+    # ✅ ORDER PRESERVED OUTPUT
+    final_rows = []
+    for url in formatted_urls:
+        emails = results_dict.get(url, [])
 
-    # ✅ SAVE STATE (FIX)
+        row = {
+            "Website": url,
+            "Email-1": emails[0] if len(emails)>0 else "",
+            "Email-2": emails[1] if len(emails)>1 else "",
+            "Email-3": emails[2] if len(emails)>2 else "",
+            "Email-4": emails[3] if len(emails)>3 else "",
+            "Email-5": emails[4] if len(emails)>4 else "",
+        }
+
+        final_rows.append(row)
+
+    df = pd.DataFrame(final_rows)
+
     st.session_state.df = df
 
-# ================= SHOW RESULT =================
+# ================= OUTPUT =================
 if st.session_state.df is not None:
 
     st.success(f"✅ {len(st.session_state.df)} Websites Processed")
@@ -256,5 +150,5 @@ if st.session_state.df is not None:
     st.download_button(
         "📥 Download CSV",
         st.session_state.df.to_csv(index=False),
-        "emails.csv"
+        "emails_clean.csv"
     )
