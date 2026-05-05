@@ -12,7 +12,7 @@ st.set_page_config(page_title="Econix Email Finder", page_icon="⚡", layout="wi
 if "df" not in st.session_state:
     st.session_state.df = None
 
-# ================= CSS (UNCHANGED - EXACT SAME) =================
+# ================= CSS (UNCHANGED) =================
 st.markdown("""
 <style>
 html, body {
@@ -123,11 +123,6 @@ Sufyan SA <span class="online"></span>
 <div style="font-size:12px;color:#aaa;">
 Build tools. Build freedom.
 </div>
-<div class="social">
-<a href="#">🔗</a>
-<a href="#">💼</a>
-<a href="#">💻</a>
-</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -169,56 +164,61 @@ HEADERS = {"User-Agent": "Mozilla/5.0"}
 def get_domain(url):
     return urlparse(url).netloc.replace("www.", "")
 
+# 🔥 ADVANCED FILTER
 def is_valid(email, domain):
-    email = email.lower()
+    email = email.lower().strip()
 
     if domain not in email:
         return False
 
-    bad = ["example","test","sample","your","png","jpg","css","js"]
-    if any(b in email for b in bad):
+    bad_words = ["example","test","sample","your","name@","email@","company","domain"]
+    if any(b in email for b in bad_words):
+        return False
+
+    public = ["gmail.com","yahoo.com","hotmail.com","outlook.com"]
+    if any(p in email for p in public):
         return False
 
     return True
 
-PATHS = ["/","/contact","/about","/support","/privacy"]
+PATHS = ["/","/contact"]
+
+def fetch(url):
+    try:
+        return requests.get(url, headers=HEADERS, timeout=6).text
+    except:
+        return ""
 
 def scrape(url):
     domain = get_domain(url)
     found = set()
 
     for path in PATHS:
-        try:
-            r = requests.get(urljoin(url, path), headers=HEADERS, timeout=6)
+        html = fetch(urljoin(url, path))
+        emails = re.findall(EMAIL_REGEX, html)
 
-            emails = re.findall(EMAIL_REGEX, r.text)
+        for e in emails:
+            if is_valid(e, domain):
+                found.add(e)
 
-            for e in emails:
-                if is_valid(e, domain):
-                    found.add(e)
-
-            if len(found) >= 5:
-                break
-
-        except:
-            continue
+        if len(found) >= 5:
+            break
 
     return url, list(found)[:5]
 
-# ================= BATCH SYSTEM =================
-BATCH_SIZE = 50
+# ================= SCRAPE =================
+if st.button("🚀 Start Scraping"):
 
-def process_batches(urls):
+    urls = list(set([u.strip() for u in urls_input.split("\n") if u.strip()]))
+
     results = []
 
-    for i in range(0, len(urls), BATCH_SIZE):
-        batch = urls[i:i+BATCH_SIZE]
-
+    with st.spinner("Scraping like a PRO..."):
         with ThreadPoolExecutor(max_workers=5) as ex:
 
             futures = [
                 ex.submit(scrape, u if u.startswith("http") else "https://" + u)
-                for u in batch
+                for u in urls
             ]
 
             for f in futures:
@@ -233,16 +233,6 @@ def process_batches(urls):
                     "Email-5": emails[4] if len(emails)>4 else "",
                 })
 
-    return results
-
-# ================= SCRAPE =================
-if st.button("🚀 Start Scraping"):
-
-    urls = list(set([u.strip() for u in urls_input.split("\n") if u.strip()]))
-
-    with st.spinner("Scraping like a PRO..."):
-        results = process_batches(urls)
-
     df = pd.DataFrame(results)
     st.session_state.df = df
 
@@ -250,8 +240,7 @@ if st.button("🚀 Start Scraping"):
 if st.session_state.df is not None:
 
     st.success(f"✅ {len(st.session_state.df)} Websites Processed")
-
-    st.dataframe(st.session_state.df.head(300), use_container_width=True)
+    st.dataframe(st.session_state.df, use_container_width=True)
 
     st.download_button(
         "📥 Download CSV",
