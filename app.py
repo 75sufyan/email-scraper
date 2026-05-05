@@ -186,7 +186,7 @@ def is_valid(email, domain):
     if domain not in email:
         return False
 
-    bad = ["example","test","sample","your","png","jpg","css","js"]
+    bad = ["example","domain","test","sample","your","png","jpg","css","js"]
     if any(b in email for b in bad):
         return False
 
