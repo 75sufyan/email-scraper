@@ -4,14 +4,13 @@ import re
 import pandas as pd
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urljoin, urlparse
-import csv
 
 # ================= PAGE CONFIG =================
 st.set_page_config(page_title="Econix Email Finder", page_icon="⚡", layout="wide")
 
 # ================= SESSION =================
-if "done" not in st.session_state:
-    st.session_state.done = False
+if "df" not in st.session_state:
+    st.session_state.df = None
 
 # ================= CSS (UNCHANGED) =================
 st.markdown("""
@@ -27,6 +26,7 @@ html, body {
     50%{background-position:100%}
     100%{background-position:0%}
 }
+
 .navbar {
     display:flex;
     justify-content:space-between;
@@ -38,6 +38,7 @@ html, body {
 .logo { font-size:22px; font-weight:bold; }
 .menu span { margin-left:20px; cursor:pointer; color:#ddd; }
 .menu span:hover { color:white; }
+
 .hero {
     padding:50px;
     border-radius:20px;
@@ -46,6 +47,7 @@ html, body {
     margin-bottom:25px;
     box-shadow:0 10px 30px rgba(0,0,0,0.4);
 }
+
 .card {
     background: rgba(255,255,255,0.07);
     padding:25px;
@@ -57,6 +59,7 @@ html, body {
     transform:translateY(-10px) scale(1.02);
     background: rgba(255,255,255,0.12);
 }
+
 .stButton button {
     background: linear-gradient(90deg,#9333ea,#c084fc);
     border:none;
@@ -66,8 +69,11 @@ html, body {
     padding:10px 20px;
     font-size:16px;
 }
+
 section[data-testid="stSidebar"] { background:#0f172a; }
+
 .profile-box { text-align:center; }
+
 .profile-img {
     width:110px; height:110px;
     border-radius:50%;
@@ -87,12 +93,14 @@ section[data-testid="stSidebar"] { background:#0f172a; }
     object-fit:cover;
 }
 .profile-name { margin-top:10px; font-weight:bold; }
+
 .online {
     height:8px; width:8px;
     background:#22c55e;
     border-radius:50%;
     display:inline-block;
 }
+
 .social a {
     margin:0 6px;
     color:#aaa;
@@ -114,6 +122,11 @@ Sufyan SA <span class="online"></span>
 </div>
 <div style="font-size:12px;color:#aaa;">
 Build tools. Build freedom.
+</div>
+<div class="social">
+<a href="#">🔗</a>
+<a href="#">💼</a>
+<a href="#">💻</a>
 </div>
 </div>
 """, unsafe_allow_html=True)
@@ -151,33 +164,25 @@ with c3:
 urls_input = st.text_area("Enter Websites (one per line)")
 
 EMAIL_REGEX = r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}"
+
 HEADERS = {"User-Agent": "Mozilla/5.0"}
 
 def get_domain(url):
     return urlparse(url).netloc.replace("www.", "")
 
-# 🔥 STRONG FILTER
 def is_valid(email, domain):
-    email = email.lower().strip()
-    email_domain = email.split("@")[-1]
+    email = email.lower()
 
-    if email_domain != domain:
+    # only same domain
+    if domain not in email:
         return False
 
-    bad_words = [
-        "example","test","sample","your","name@","email@",
-        ".png",".jpg",".jpeg",".svg",".webp",".css",".js",
-        "wix","sentry","stripe","cloudflare"
-    ]
-
-    if any(b in email for b in bad_words):
+    # remove garbage
+    bad = ["example","test","sample","your","png","jpg","css","js"]
+    if any(b in email for b in bad):
         return False
 
     return True
-
-def sort_emails(emails):
-    priority = ["info","contact","sales","support","hello"]
-    return sorted(emails, key=lambda e: next((i for i,p in enumerate(priority) if p in e), 99))
 
 PATHS = ["/","/contact","/about","/support","/privacy"]
 
@@ -188,10 +193,9 @@ def scrape(url):
     for path in PATHS:
         try:
             full = urljoin(url, path)
-            r = requests.get(full, headers=HEADERS, timeout=6)
-            text = r.text[:150000]
+            r = requests.get(full, headers=HEADERS, timeout=10)
 
-            emails = re.findall(EMAIL_REGEX, text)
+            emails = re.findall(EMAIL_REGEX, r.text)
 
             for e in emails:
                 if is_valid(e, domain):
@@ -203,60 +207,47 @@ def scrape(url):
         except:
             continue
 
-    return url, sort_emails(list(found))[:5]
+    return url, list(found)[:5]
 
 # ================= SCRAPE =================
 if st.button("🚀 Start Scraping"):
 
-    urls = list(set([u.strip() for u in urls_input.split("\n") if u.strip()]))
+    urls = [u.strip() for u in urls_input.split("\n") if u.strip()]
 
-    FILE = "emails_live.csv"
+    results = []
 
-    # init file
-    with open(FILE, "w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(["Website","Email-1","Email-2","Email-3","Email-4","Email-5"])
+    with st.spinner("Scraping like a PRO..."):
+        with ThreadPoolExecutor(max_workers=10) as ex:
 
-    progress = st.progress(0)
-    status = st.empty()
+            futures = [
+                ex.submit(scrape, u if u.startswith("http") else "https://" + u)
+                for u in urls
+            ]
 
-    BATCH = 20
-    done = 0
+            for f in futures:
+                url, emails = f.result()
 
-    with st.spinner("Scraping safely..."):
+                results.append({
+                    "Website": url,
+                    "Email-1": emails[0] if len(emails)>0 else "",
+                    "Email-2": emails[1] if len(emails)>1 else "",
+                    "Email-3": emails[2] if len(emails)>2 else "",
+                    "Email-4": emails[3] if len(emails)>3 else "",
+                    "Email-5": emails[4] if len(emails)>4 else "",
+                })
 
-        for i in range(0, len(urls), BATCH):
+    df = pd.DataFrame(results)
 
-            batch = urls[i:i+BATCH]
+    st.session_state.df = df
 
-            with ThreadPoolExecutor(max_workers=5) as ex:
-                futures = [
-                    ex.submit(scrape, u if u.startswith("http") else "https://" + u)
-                    for u in batch
-                ]
+# ================= RESULT =================
+if st.session_state.df is not None:
 
-                for f in futures:
-                    url, emails = f.result()
+    st.success(f"✅ {len(st.session_state.df)} Websites Processed")
+    st.dataframe(st.session_state.df, use_container_width=True)
 
-                    with open(FILE, "a", newline="", encoding="utf-8") as fcsv:
-                        writer = csv.writer(fcsv)
-                        writer.writerow([
-                            url,
-                            emails[0] if len(emails)>0 else "",
-                            emails[1] if len(emails)>1 else "",
-                            emails[2] if len(emails)>2 else "",
-                            emails[3] if len(emails)>3 else "",
-                            emails[4] if len(emails)>4 else "",
-                        ])
-
-                    done += 1
-                    progress.progress(done / len(urls))
-                    status.write(f"Processed: {done}/{len(urls)}")
-
-    st.success("✅ Completed (1000+ domains supported)")
-    st.session_state.done = True
-
-# ================= DOWNLOAD =================
-if st.session_state.done:
-    with open("emails_live.csv","rb") as f:
-        st.download_button("📥 Download CSV", f, file_name="emails.csv")
+    st.download_button(
+        "📥 Download CSV",
+        st.session_state.df.to_csv(index=False),
+        "emails.csv"
+    )
