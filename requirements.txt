@@ -4,4 +4,4 @@ beautifulsoup4
 pandas
 langdetect
 deep-translator
-playwright
+playwright==1.40.0
