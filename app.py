@@ -4,6 +4,12 @@ import re
 import pandas as pd
 from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import urljoin, urlparse
+from bs4 import BeautifulSoup
+
+# 🌍 NEW IMPORTS (JS + Translation)
+from langdetect import detect
+from deep_translator import GoogleTranslator
+from playwright.sync_api import sync_playwright
 
 # ================= PAGE CONFIG =================
 st.set_page_config(page_title="Econix Email Finder", page_icon="⚡", layout="wide")
@@ -12,7 +18,7 @@ st.set_page_config(page_title="Econix Email Finder", page_icon="⚡", layout="wi
 if "df" not in st.session_state:
     st.session_state.df = None
 
-# ================= CSS (UNCHANGED) =================
+# ================= CSS (UNCHANGED UI) =================
 st.markdown("""
 <style>
 html, body {
@@ -147,7 +153,7 @@ st.markdown("""
 st.markdown("""
 <div class="hero">
 <h1>Find Real Business Emails Instantly</h1>
-<p>Smart scraping • No garbage • Max 5 clean emails per site</p>
+<p>Smart scraping • JS websites supported • Max 5 clean emails per site</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -167,25 +173,55 @@ EMAIL_REGEX = r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}"
 
 HEADERS = {"User-Agent": "Mozilla/5.0"}
 
+PATHS = ["/","/contact","/about","/support","/privacy"]
+
+# ================= DOMAIN =================
 def get_domain(url):
     return urlparse(url).netloc.replace("www.", "")
 
+# ================= VALID EMAIL =================
 def is_valid(email, domain):
     email = email.lower()
 
-    # only same domain
     if domain not in email:
         return False
 
-    # remove garbage
     bad = ["example","test","sample","your","png","jpg","css","js"]
     if any(b in email for b in bad):
         return False
 
     return True
 
-PATHS = ["/","/contact","/about","/support","/privacy"]
+# ================= TRANSLATOR =================
+def translate_to_english(text):
+    try:
+        if len(text) < 20:
+            return text
 
+        lang = detect(text)
+        if lang == "en":
+            return text
+
+        return GoogleTranslator(source=lang, target='en').translate(text)
+
+    except:
+        return text
+
+# ================= JS RENDER (PLAYWRIGHT) =================
+def fetch_rendered_html(url):
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+            page.goto(url, timeout=30000)
+            page.wait_for_timeout(3000)
+            html = page.content()
+            browser.close()
+            return html
+    except:
+        return None
+
+# ================= SCRAPER =================
 def scrape(url):
     domain = get_domain(url)
     found = set()
@@ -193,9 +229,22 @@ def scrape(url):
     for path in PATHS:
         try:
             full = urljoin(url, path)
-            r = requests.get(full, headers=HEADERS, timeout=10)
 
-            emails = re.findall(EMAIL_REGEX, r.text)
+            # 🔥 JS render first
+            html = fetch_rendered_html(full)
+
+            # fallback
+            if not html:
+                r = requests.get(full, headers=HEADERS, timeout=10)
+                html = r.text
+
+            soup = BeautifulSoup(html, "html.parser")
+            text = soup.get_text(separator=" ", strip=True)
+
+            # 🌍 translate
+            text = translate_to_english(text)
+
+            emails = re.findall(EMAIL_REGEX, text)
 
             for e in emails:
                 if is_valid(e, domain):
@@ -209,16 +258,15 @@ def scrape(url):
 
     return url, list(found)[:5]
 
-# ================= SCRAPE =================
+# ================= RUN =================
 if st.button("🚀 Start Scraping"):
 
     urls = [u.strip() for u in urls_input.split("\n") if u.strip()]
-
     results = []
 
     with st.spinner("Scraping like a PRO..."):
-        with ThreadPoolExecutor(max_workers=10) as ex:
 
+        with ThreadPoolExecutor(max_workers=10) as ex:
             futures = [
                 ex.submit(scrape, u if u.startswith("http") else "https://" + u)
                 for u in urls
@@ -237,10 +285,9 @@ if st.button("🚀 Start Scraping"):
                 })
 
     df = pd.DataFrame(results)
-
     st.session_state.df = df
 
-# ================= RESULT =================
+# ================= OUTPUT =================
 if st.session_state.df is not None:
 
     st.success(f"✅ {len(st.session_state.df)} Websites Processed")
