@@ -1,3 +1,8 @@
 streamlit
 requests
 pandas
+beautifulsoup4
+lxml
+langdetect
+deep-translator
+playwright
